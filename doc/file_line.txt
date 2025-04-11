@@ -1,0 +1,57 @@
+*file_line.txt* *file_line.nvim*  file_line.nvim Plugin Documentation
+
+==============================================================================
+CONTENTS                                                             *file_line*
+
+1. Functions ............................................. |file_line_functions|
+
+==============================================================================
+FUNCTIONS                                                  *file_line_functions*
+
+This plugin provides 4 functions. |file_line.register|,
+|file_line.openFileOnLine|, |file_line.filenameLineCol| and
+|file_line.onOpen|.
+
+------------------------------------------------------------------------------
+file_line.register()                                        *file_line.register*
+
+
+    Register the autocommand needed to automatically open a file on the line
+    and column specified.
+
+------------------------------------------------------------------------------
+file_line.openFileOnLine(name, line, col, winnr)      *file_line.openFileOnLine*
+
+    Opens a file and jumps to the required line and column.
+
+    If both {line} and {col} are `nil`, does not open the file and returns
+    `false`. If {col} is `nil`, it is set to 0.
+
+    {winnr} can be used to specify which window to open the file in. If it is
+    a number, it is interpreted a window ID. If it is a string, it will be
+    first passed to |winnr()|. If `nil`, current window is used.
+
+    Parameters:
+        {name}  (string): Path of the file to open.
+        {line}  (number?): Line number
+        {col}   (number?): Column number
+        {winnr} ((number|string)?): Window to open the file in, current window
+		if `nil`.
+
+    Returns:
+        (boolean) `true` if file was opened, `false` otherwise (see above).
+
+------------------------------------------------------------------------------
+file_line.filenameLineCol(name)                      *file_line.filenameLineCol*
+
+    Parse a string into file name, (optionally) line and (optionally) column
+
+    Parameters:
+        {name} (string): Name to parse
+
+    Returns:
+        (string)  Name of the file
+        (number?) Line number if present
+        (number?) Column number if present
+
+vim:tw=78:ts=8:noet:ft=help:norl:
