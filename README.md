@@ -9,10 +9,10 @@ be more flexible and easier to integrate into a modern Neovim config.
 
 > [!TIP]
 > The following line/column formats also work:
-> file(line)
-> file(line:column)
-> file:line:column:
-> file:line
+> * file(line)
+> * file(line:column)
+> * file:line:column:
+> * file:line
 
 ## Usage
 
