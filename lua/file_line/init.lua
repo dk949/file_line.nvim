@@ -1,16 +1,15 @@
 local M = {}
 
 ---@alias file_line.OnOpenFn  fun(name:string, line:number, col:number, bufnr:number):nil
-
----@alias file_line.IsFnameOpts "force"|true|false
+---@alias file_line.EnableGF  boolean|{ignore_pat:string[]}|{match_pat:string[]}
 
 ---@class file_line.Options
 local default_opts = {
     register = true,
     ---@type file_line.OnOpenFn?
     on_open = nil,
-    ---@type file_line.IsFnameOpts?
-    enable_isfname = false,
+    ---@type file_line.EnableGF?
+    enable_gf = false,
 }
 
 ---comment
@@ -21,7 +20,7 @@ local function applyDefaultOpts(opts)
         error("Options must be a table (or nil)")
     end
     if not opts then opts = {} end
-    return vim.tbl_deep_extend("keep", default_opts, opts)
+    return vim.tbl_deep_extend("force", default_opts, opts)
 end
 
 ---@type (fun(name:string, line:number, col:number, bufnr:number):nil)?
@@ -64,12 +63,13 @@ end
 ---@param col string?
 --- Either nil (current window), window id, or a string accepted by winnr()
 ---@param winnr (string|integer)?
+---@return boolean
 function M.openFileOnLine(name, line, col, winnr)
     name = vim.fn.fnameescape(name)
     if line == nil and col == nil then return false end
     local real_line = tonumber(line) or 0
     local real_col = tonumber(col) or 0
-    if not vim.fn.filereadable(name) then return end
+    if vim.fn.filereadable(name) == 0 then return false end
 
     if winnr ~= nil then
         if type(winnr) == "string" then winnr = vim.fn.winnr(winnr) end
@@ -94,12 +94,14 @@ function M.onOpen(cb)
 end
 
 function M.register()
-    local group = vim.api.nvim_create_augroup("file_line", {})
+    local group = vim.api.nvim_create_augroup("file_line_register", {})
     vim.api.nvim_create_autocmd({ "BufNewFile", "BufRead" }, {
         group = group,
         pattern = "*",
         nested = true,
         callback = function(ev)
+            -- If this is a name of an existing file, don't try to parse it as a file:line:column name
+            if vim.fn.filereadable(ev.file) == 1 then return end
             local old_alt = vim.fn.bufnr('#')
             if M.openFileOnLine(M.filenameLineCol(ev.file)) then
                 vim.cmd("bwipeout " .. ev.buf)
@@ -109,12 +111,39 @@ function M.register()
     })
 end
 
----@param opts file_line.IsFnameOpts?
-function M.enableIsfname(opts)
-    if not opts then return false end
+---@param buf integer?
+local function setKeymap(buf)
+    vim.keymap.set('n', "gf", "gF",
+        {
+            desc = "file_line.nvim: use gf to open files to a partucular line",
+            buffer = buf,
+        })
+end
 
-    if vim.opt.isfname._info ~= vim.o.isfname and opts ~= "force" then return end
-    vim.opt.isfname:append(":")
+---@param opts file_line.EnableGF?
+function M.enableGf(opts)
+    if not opts then return end
+    if opts == true then
+        setKeymap()
+        return
+    end
+    local pat
+    if opts.ignore_pat and opts.match_pat then
+        error("file_line.nvim: specify ignore_pat or match_pat, not both")
+    elseif opts.match_pat then
+        pat = opts.match_pat
+    elseif opts.ignore_pat then
+        pat = vim.iter(opts.ignore_pat)
+            :map(function(p) return '{*}' .. '{' .. p .. '}\\@<!' end)
+            :totable()
+    else
+        return
+    end
+    vim.api.nvim_create_autocmd("BufAdd", {
+        group = vim.api.nvim_create_augroup("file_line_enable_gf", { clear = false }),
+        pattern = pat,
+        callback = function(args) setKeymap(args.buf) end,
+    })
 end
 
 ---@param opts file_line.Options
@@ -122,7 +151,7 @@ function M.setup(opts)
     opts = applyDefaultOpts(opts)
     if opts.register then M.register() end
     if opts.on_open then M.onOpen(opts.on_open) end
-    M.enableIsfname(opts.enable_isfname)
+    M.enableGf(opts.enable_gf)
 end
 
 return M

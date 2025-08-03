@@ -3,21 +3,58 @@
 ==============================================================================
 CONTENTS                                                             *file_line*
 
-1. Functions ............................................. |file_line_functions|
+1. Configuration ..................................... |file_line_configuration|
+2. API ......................................................... |file_line_api|
+3. Legacy configuration ..................................... |file_line_legacy|
 
 ==============================================================================
-FUNCTIONS                                                  *file_line_functions*
-
-This plugin provides 4 functions. |file_line.register|,
-|file_line.openFileOnLine|, |file_line.filenameLineCol| and
-|file_line.onOpen|.
+CONFIGURATION                                          *file_line_configuration*
 
 ------------------------------------------------------------------------------
-file_line.register()                                        *file_line.register*
+file_line.setup(opts)                                          *file_line.setup* 
 
+The {setup} function takes a `table` or `nil`. The table can have the
+following fields:
 
-    Register the autocommand needed to automatically open a file on the line
-    and column specified.
+    {register}	(`boolean`):
+		    Intercepts new files being edited with a name matching a
+		    pattern above and interprets the line and column number.
+		    (default: `true`)
+    {on_open}	(`file_line.OnOpenFn?`):
+		    A callback to be invoked before the file is opened by the
+		    plugin. Not invoked when the file is opened without the
+		    line, column pattern.
+		    (default: `nil`)
+    {enable_gf}	(`file_line.EnableGF?`)
+		    This is added just for convenience, it maps `gf` to `gF`
+		    in normal mode, so that `gf` opens files followed by line
+		    numbers. Note that this is not quite the same pattern as
+		    is enabled by this plugin, this is (neo)vim built-in
+		    functionality.
+
+		    If `enable_gf` is a table, it is expected to have one of
+		    two keys (but not both!), `match_pat` or `ignore_pat`:
+		    This will match the file name will or will not enable the
+		    mapping for that file respectively.
+
+		    If `enable_gf` is `true`, it is enabled on all files.
+		    (default: `false`)
+
+------------------------------------------------------------------------------
+file_line.OnOpenFn                                          *file_line.OnOpenFn* 
+
+>lua
+    fun(name:string, line:number, col:number, bufnr:number):nil
+<
+
+------------------------------------------------------------------------------
+file_line.EnableGF                                          *file_line.EnableGF* 
+
+>lua
+    boolean|{ignore_pat:string[]}|{match_pat:string[]}
+<
+==============================================================================
+API                                                              *file_line_api*
 
 ------------------------------------------------------------------------------
 file_line.openFileOnLine(name, line, col, winnr)      *file_line.openFileOnLine*
@@ -53,5 +90,22 @@ file_line.filenameLineCol(name)                      *file_line.filenameLineCol*
         (string)  Name of the file
         (number?) Line number if present
         (number?) Column number if present
+
+
+==============================================================================
+LEGACY CONFIGURATION                                          *file_line_legacy*
+
+It is not necessary to use the `setup` function, you can also call the old
+configuration functions directly.
+
+NOTE:
+    The preferred way is to use the `setup` function (or `opts` field in lazy.nvim).
+    These are not currently deprecated, but they may be in the future.
+
+    {register()}	same as passing `register = true` to setup
+
+    {onOpen(fn)}	same as passing `on_open = fn` to setup
+
+    {enableGf(opts)}	same as passing `enable_gf = opts` to setup
 
 vim:tw=78:ts=8:noet:ft=help:norl:
