@@ -1,5 +1,29 @@
 local M = {}
 
+---@alias file_line.OnOpenFn  fun(name:string, line:number, col:number, bufnr:number):nil
+
+---@alias file_line.IsFnameOpts "force"|true|false
+
+---@class file_line.Options
+local default_opts = {
+    register = true,
+    ---@type file_line.OnOpenFn?
+    on_open = nil,
+    ---@type file_line.IsFnameOpts?
+    enable_isfname = false,
+}
+
+---comment
+---@param opts any
+---@return file_line.Options
+local function applyDefaultOpts(opts)
+    if not ({ ["table"] = true, ["nil"] = true })[type(opts)] then
+        error("Options must be a table (or nil)")
+    end
+    if not opts then opts = {} end
+    return vim.tbl_deep_extend("keep", default_opts, opts)
+end
+
 ---@type (fun(name:string, line:number, col:number, bufnr:number):nil)?
 local _on_open = nil
 
@@ -83,6 +107,22 @@ function M.register()
             end
         end
     })
+end
+
+---@param opts file_line.IsFnameOpts?
+function M.enableIsfname(opts)
+    if not opts then return false end
+
+    if vim.opt.isfname._info ~= vim.o.isfname and opts ~= "force" then return end
+    vim.opt.isfname:append(":")
+end
+
+---@param opts file_line.Options
+function M.setup(opts)
+    opts = applyDefaultOpts(opts)
+    if opts.register then M.register() end
+    if opts.on_open then M.onOpen(opts.on_open) end
+    M.enableIsfname(opts.enable_isfname)
 end
 
 return M
