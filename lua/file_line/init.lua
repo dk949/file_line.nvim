@@ -104,7 +104,7 @@ function M.register()
             if vim.fn.filereadable(ev.file) == 1 then return end
             local old_alt = vim.fn.bufnr('#')
             if M.openFileOnLine(M.filenameLineCol(ev.file)) then
-                vim.cmd("bwipeout " .. ev.buf)
+                vim.cmd("bdelete " .. ev.buf)
                 if old_alt >= 0 then vim.fn.setreg('#', old_alt) end
             end
         end
